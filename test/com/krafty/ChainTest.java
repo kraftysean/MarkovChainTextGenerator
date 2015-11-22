@@ -9,26 +9,28 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.nio.file.NoSuchFileException;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
- * @author Seán Marnane 21/11/15
+ * @author  Seán Marnane 21/11/15
+ *
  */
 public class ChainTest {
 
-    private Chain chainDefCon = new Chain();
-    private Chain chainParamsCon = new Chain(2);
+    private Chain chain;
     private List<String> listData;
     private String testData;
 
     @Before
     public void setUp() {
-        testData = "A Selection of Words To Test";
-        listData = Arrays.asList(testData.split("\\s+"));
+        chain = new Chain(2);
+        listData = new ArrayList<>();
+        testData = "To Test A Selection of \n\nMultiline Words To Test";
+        Collections.addAll(listData, testData.split("\\s+"));
+        listData.add(Chain.MARKER);
     }
 
     @Rule
@@ -36,38 +38,58 @@ public class ChainTest {
 
 
     @Test
-    public void testReadTrainingData() throws Exception {
+    public void testReadTxtInput() throws Exception {
         File tempFile = testFolder.newFile("test.txt");
         BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
         bw.write(testData);
         bw.close();
 
-        List<String> strings = chainDefCon.readTrainingData(testFolder.getRoot() + "/" + tempFile.getName());
-        assertEquals(listData, strings);
+        chain.readTxtInput(testFolder.getRoot() + "/" + tempFile.getName());
+        assertEquals(listData, chain.getWords());
     }
 
-    @Test
-    public void testReadTrainingDataNoSuchFileException() throws IOException {
-        chainDefCon.readTrainingData("invalid_name");
+    @Test (expected = NoSuchFileException.class)
+    public void testReadTxtInputNoSuchFileException() throws IOException {
+        chain.readTxtInput("invalid_name");
     }
 
     @Test (expected = IOException.class)
-    public void testReadTrainingDataIOException() throws IOException {
+    public void testReadTxtInputIOException() throws IOException {
         File tempFile = testFolder.newFile("test.txt");
         tempFile.setReadable(false);
 
-        chainDefCon.readTrainingData(testFolder.getRoot() + "/" + tempFile.getName());
+        chain.readTxtInput(testFolder.getRoot() + "/" + tempFile.getName());
     }
 
     @Test
     public void testBuild() throws Exception {
-        chainDefCon.build(listData);
-        fail("Not implemented yet!");
+        File tempFile = testFolder.newFile("test.txt");
+        BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
+        bw.write(testData);
+        bw.close();
+
+        chain.readTxtInput(testFolder.getRoot() + "/" + tempFile.getName());
+        chain.build();
+
+        List<String> expectedValue = new ArrayList<>();
+        expectedValue.add("A");
+        expectedValue.add("\n");
+
+        assertEquals(7, chain.getStateTable().size());
+        assertEquals(expectedValue, chain.getStateTable().get(new Prefix(listData, 0, 2)));
     }
 
     @Test
     public void testGenerate() throws Exception {
-        chainDefCon.generate(100);
-        fail("Not implemented yet!");
+        File tempFile = testFolder.newFile("test.txt");
+        BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
+        bw.write(testData);
+        bw.close();
+
+        chain.readTxtInput(testFolder.getRoot() + "/" + tempFile.getName());
+        chain.build();
+
+        assertNotNull(chain.generate(100));
+        // Update class to allow a seed value to be specified for the Randomizer
     }
 }

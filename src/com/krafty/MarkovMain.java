@@ -1,14 +1,13 @@
 package com.krafty;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
- * @author Seán Marnane 20/11/15.
+ * @author  Seán Marnane 20/11/15
  *
- * @apiNote "Use any existing text to construct a statistical model of the language as used in that text, and from that
- * generate random text that has similar statistics to the original."  This is the main class which reads the input
- * from console. builds the prefix/suffix data structure and generates the random output.
+ * @apiNote  "Use any existing text to construct a statistical model of the language as used in that text, and from
+ * that generate random text that has similar statistics to the original."  This is the main class which reads the
+ * input from console. builds the prefix/suffix data structure and generates the random output.
  */
 
 public class MarkovMain {
@@ -18,14 +17,19 @@ public class MarkovMain {
     public static void main(String[] args) throws IOException {
         System.out.println("MARKOV CHAIN TEXT GENERATOR\n===========================\n");
 
-        Chain chain = new Chain(); // Initialise Chain - assuming default order = 2, max = 100
+        // Initialise Chain - assuming default order = 2, max = 100
+        Chain chain = new Chain(2);
 
-        List<String> trainingData = chain.readTrainingData("simple.txt");  // Prepare training data
+        // Prepare training data
+        chain.readTxtInput("alice.txt");
 
-        chain.build(trainingData);  // Build the prefix/suffixes table
+        // Build the prefix/suffixes table
+        chain.build();
 
-        String output = chain.generate(MAX_COUNT);  // Generate the new text (limit of MAX_COUNT words).
+        // Generate the new text (limit of MAX_COUNT words).
+        String output = chain.generate(MAX_COUNT);
 
+        System.out.println(output);
 
 //        ConsoleReader.readInputParams();  // Helper: Enables the setting of prefix and max counts
 //        ConsoleReader.listTextFilesOnPath(); // Helper: To list txt files currently on the path

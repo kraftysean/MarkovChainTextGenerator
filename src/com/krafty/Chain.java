@@ -1,68 +1,87 @@
 package com.krafty;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
- * @author Seán Marnane 21/11/15.
- *
- * Contains a collection of prefixes to a list of suffixes, where prefix is a unique String consisting of a pre-defined
- * number of words separated by spaces and suffix is the list of words that follows each prefix.
- *
+ * @author Seán Marnane 21/11/15
+ *         <p>
+ *         Contains a collection of prefixes to a list of suffixes, where prefix is a unique String consisting of a
+ *         pre-defined number of words separated by spaces and suffix is the list of words that follows each prefix.
  */
 public class Chain {
 
-    public static final String EOF_MARKER = "\n";  // Marker to signal that the end of the file has been reached.
+    /* Marker signals end of list has been reached. This is a good marker to use as
+     * the file will be buffered line by line.  Therefore, it can never have "\n";
+     */
+    public static final String MARKER = "\n";
 
-    private static int ORDER_K = 2;  // The default order to evaluate the Prefix
-    private Map<String, List<String>> stateTable;
+    private final Map<Prefix, List<String>> stateTable;
+    private final List<String> words;
 
-    public Chain() {
-        stateTable = new Hashtable<>();
-    }
+    private static Random randomizer = new Random();  // TEST: Seed set to make results reproducable
+    private static int ORDER_K;                           // Default: order to evaluate the Prefix
 
     public Chain(int orderK) {
         ORDER_K = orderK;
         stateTable = new Hashtable<>();
+        words = new ArrayList<>();
     }
 
-    public List<String> readTrainingData(String pathToFile) throws IOException {
-        List<String> words = new ArrayList<>();
-        Path path = Paths.get(pathToFile);
-        try {
-            BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
+    public void readTxtInput(String pathToFile) throws IOException {
+        String line = "";
 
-            while(true) {
-                final String line = reader.readLine();
-                if(line == null)
-                    break;
-                Collections.addAll(words, line.split("\\s+"));
+        BufferedReader in = Files.newBufferedReader(Paths.get(pathToFile), StandardCharsets.UTF_8);
+        while ((line = in.readLine()) != null) {                   // Read lines until File empty or reached the end
+            if (line.isEmpty())                                    // Skip lines with no text
+                continue;
+            Collections.addAll(words, line.trim().split("\\s+"));  // Remove spaces before adding words to ArrayList
+        }
+        words.add(MARKER);  // End of file marker appended to ArrayList
+    }
+
+
+    public void build() throws IOException {
+        int adjInputSize = words.size() - ORDER_K;  // Adjust input size to account for list of size order-k
+
+        for (int i = 0; i < adjInputSize; i++) {
+            Prefix currentPrefix = new Prefix(words, i, ORDER_K);
+            if (!stateTable.containsKey(currentPrefix)) {
+                stateTable.put(currentPrefix, new ArrayList<>());
             }
-            return words;
+            stateTable.get(currentPrefix).add(words.get(i + ORDER_K));
         }
-        catch (NoSuchFileException e) {
-            System.out.println("File not found.");
-        }
-        return null;
-    }
-
-
-    public void build(List<String> trainingData) throws IOException {
-            System.out.println(trainingData.toString());
-
     }
 
 
     public String generate(int maxCount) {
-        return null;
+        StringBuilder sb = new StringBuilder();
+
+        // Get initial prefix key as starting point
+        Prefix key = stateTable.keySet().iterator().next();
+        for (int i = 0; i < maxCount; i++) {
+            List<String> suffixes = stateTable.get(key);
+            String suffix = suffixes.get(randomizer.nextInt(suffixes.size()));
+
+            if (suffix.equals(MARKER))
+                break;
+            sb.append(suffix).append(" ");
+
+            key.getPrefix().remove(0);
+            key.getPrefix().add(suffix);
+        }
+        return sb.toString().trim();
+    }
+
+    public List<String> getWords() {
+        return words;
+    }
+
+    public Map<Prefix, List<String>> getStateTable() {
+        return stateTable;
     }
 }
