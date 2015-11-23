@@ -23,9 +23,10 @@ public class ChainModelTest {
     private ChainModel model;
     private List<String> listData, expectedData;
     private String testData;
+    private File tempFile;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         model = new ChainModel();
         listData = new ArrayList<>();
         testData = "To Test A Selection of Multiline\n\n Words To Test";
@@ -33,7 +34,12 @@ public class ChainModelTest {
         listData.add(ChainModel.MARKER);
 
         expectedData = new ArrayList<>();
-        expectedData.add("To");
+        expectedData.add("A");
+        expectedData.add("\n");
+        tempFile = testFolder.newFile("test.txt");
+        BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
+        bw.write(testData);
+        bw.close();
     }
 
     @Rule
@@ -42,7 +48,6 @@ public class ChainModelTest {
 
     @Test
     public void testProcessInput() throws Exception {
-        File tempFile = testFolder.newFile("test.txt");
         BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
         bw.write(testData);
         bw.close();
@@ -58,7 +63,6 @@ public class ChainModelTest {
 
     @Test (expected = IOException.class)
     public void testProcessInputIOException() throws IOException {
-        File tempFile = testFolder.newFile("test.txt");
         tempFile.setReadable(false);
 
         model.processInput(testFolder.getRoot() + "/" + tempFile.getName());
@@ -66,29 +70,31 @@ public class ChainModelTest {
 
     @Test
     public void testBuild() throws Exception {
-        File tempFile = testFolder.newFile("test.txt");
-        BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
-        bw.write(testData);
-        bw.close();
 
         model.processInput(testFolder.getRoot() + "/" + tempFile.getName());
-        model.build();
+        model.buildStateTable();
 
-        assertEquals(9, model.getStateTable().size());
-        assertEquals(expectedData, model.getStateTable().get(new ChainPrefix(listData, 0, 2, ChainModel.MARKER)));
+        assertEquals(9, model.getChain().size());
+        assertEquals(expectedData, model.getChain().get(new ChainPrefix(listData, 2, 2, ChainModel.MARKER)));
     }
 
     @Test
     public void testGenerate() throws Exception {
-        File tempFile = testFolder.newFile("test.txt");
-        BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
-        bw.write(testData);
-        bw.close();
-
         model.processInput(testFolder.getRoot() + "/" + tempFile.getName());
-        model.build();
+        model.buildStateTable();
 
         assertNotNull(model.generateRandomText());
         // Update class to allow a seed value to be specified for the Randomizer
+    }
+
+    @Test
+    public void testAssignInputParams() {
+        Map<String, Integer> expected = new HashMap<>();
+        expected.put("orderK", 1);
+        expected.put("maxC", 2);
+
+        model.assignInputParams(expected);
+        assertEquals(1, ChainModel.getOrderK());
+        assertEquals(2, ChainModel.getMaxCount());
     }
 }

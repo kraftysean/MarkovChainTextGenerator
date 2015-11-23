@@ -12,22 +12,26 @@ import java.util.Map;
 
 /**
  * @author Seán Marnane 22/11/15
+ *
+ * This is the main GUI implementation for the Markov Chain algorithm Text Generator.
+ * It allows input parameters to be set, new text to be generated and output to the screen.
+ * The outputted text may also be saved.
  */
 public class ChainView extends JFrame {
-    protected static JFileChooser openFile = new JFileChooser(System.getProperty("user.dir"));
-    protected static JFileChooser saveFile = new JFileChooser(System.getProperty("user.dir"));
-    protected JSlider orderK, maxCount;
-    protected JTextField notifications;
-    protected JTextArea displayOutput;
-    protected JButton generateBtn;
+    private static JFileChooser openFile = new JFileChooser(System.getProperty("user.dir"));
+    private static JFileChooser saveFile = new JFileChooser(System.getProperty("user.dir"));
+    private JSlider orderK, maxCount;
+    private JTextField notifications;
+    private JTextArea displayOutput;
+    private JButton generateBtn;
 
     private ChainController controller = new ChainController();
 
-    public ChainView() {
-        initComponents();
+    public ChainView(String title) {
+        initComponents(title);
     }
 
-    private void initComponents() {
+    private void initComponents(String title) {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         JPanel parent = (JPanel) getContentPane();
@@ -36,7 +40,7 @@ public class ChainView extends JFrame {
         parent.add(makeDisplayPanel(), BorderLayout.CENTER);
         parent.add(makeNotifications(), BorderLayout.SOUTH);
 
-        setTitle("Text Generator - using Markov Chain algorithm");
+        setTitle(title);
 
         makeMenus();
         generateTextEvent();
@@ -46,11 +50,11 @@ public class ChainView extends JFrame {
         setVisible(true);
     }
 
-    protected JPanel makeInputPanel() {
+    private JPanel makeInputPanel() {
         JPanel p = new JPanel(new BorderLayout());
         JPanel flow = new JPanel(new FlowLayout());
-        orderK = makeCustomSlider(1, 5, 2, 1, 3, setOrderKSlider());
-        maxCount = makeCustomSlider(100, 10000, 1000, 1000, 2500, setMaxCSlider());
+        orderK = makeCustomSlider(1, 5, 2, 1, 3, makeOrderKSliderLabel());
+        maxCount = makeCustomSlider(100, 10000, 1000, 1000, 0, makeMaxCSliderLabel());
         generateBtn = new JButton("Generate Text");
         generateBtn.setEnabled(false);
         p.setBorder(BorderFactory.createTitledBorder("Input:"));
@@ -64,7 +68,7 @@ public class ChainView extends JFrame {
     }
 
 
-    protected JPanel makeDisplayPanel() {
+    private JPanel makeDisplayPanel() {
         JPanel p = new JPanel(new BorderLayout());
         displayOutput = new JTextArea(10, 40);
         p.setBorder(BorderFactory.createTitledBorder("Output:"));
@@ -72,7 +76,7 @@ public class ChainView extends JFrame {
         return p;
     }
 
-    protected JPanel makeNotifications() {
+    private JPanel makeNotifications() {
         JPanel p = new JPanel(new BorderLayout());
         notifications = new JTextField(30);
         p.setBorder(BorderFactory.createTitledBorder("Notifications:"));
@@ -80,7 +84,7 @@ public class ChainView extends JFrame {
         return p;
     }
 
-    protected JSlider makeCustomSlider(int min, int max, int def, int minT, int majT, Hashtable<Integer, JLabel> lbl) {
+    private JSlider makeCustomSlider(int min, int max, int def, int minT, int majT, Hashtable<Integer, JLabel> lbl) {
         JSlider slider = new JSlider(JSlider.HORIZONTAL, min, max, def);
         slider.setMinorTickSpacing(minT);
         slider.setMajorTickSpacing(majT);
@@ -91,7 +95,7 @@ public class ChainView extends JFrame {
         return slider;
     }
 
-    private Hashtable<Integer, JLabel> setOrderKSlider() {
+    private Hashtable<Integer, JLabel> makeOrderKSliderLabel() {
         Hashtable<Integer, JLabel> table = new Hashtable<>();
         table.put(1, new JLabel("1"));
         table.put(3, new JLabel("3"));
@@ -99,7 +103,7 @@ public class ChainView extends JFrame {
         return table;
     }
 
-    private Hashtable<Integer, JLabel> setMaxCSlider() {
+    private Hashtable<Integer, JLabel> makeMaxCSliderLabel() {
         Hashtable<Integer, JLabel> table = new Hashtable<>();
         table.put(100, new JLabel("100"));
         table.put(5000, new JLabel("5000"));
@@ -107,18 +111,29 @@ public class ChainView extends JFrame {
         return table;
     }
 
-    protected void makeMenus() {
+    private void makeMenus() {
         JMenuBar bar = new JMenuBar();
         bar.add(makeFileMenu());
         setJMenuBar(bar);
     }
 
-
     @SuppressWarnings("serial")
-    protected JMenu makeFileMenu() {
+    private JMenu makeFileMenu() {
         JMenu fileMenu = new JMenu("File");
+        makeOpenFileMenuItem(fileMenu);
+        makeSaveFileMenuItem(fileMenu);
+        makeClearMenuItem(fileMenu);
+        makeQuitMenuItem(fileMenu);
+        return fileMenu;
+    }
 
-        // Event listener for Open menu item
+    /**
+     * This is the event listener for opening a file.  It will send the 'filePath' to the Controller class,
+     * which will process the file and return a boolean.  If true, enable the 'Generate Text' button and update
+     * the Notification message.  If false, show Error Message dialog.
+     * @param fileMenu  the filePath for the selected item in the File Explorer window.
+     */
+    private void makeOpenFileMenuItem(JMenu fileMenu) {
         fileMenu.add(new AbstractAction("Open File") {
             public void actionPerformed(ActionEvent ev) {
                 int retval = openFile.showOpenDialog(null);
@@ -130,53 +145,83 @@ public class ChainView extends JFrame {
                             generateBtn.setEnabled(true);
                             showNotification("File successfully read in to buffer");
                         }
+                        else
+                            showError("Error reading " + file.getName());
                     } catch (Exception ex) {
                         showError("Error reading " + file.getName());
                     }
                 }
             }
         });
+    }
 
+    /**
+     * This is the event-listener for saving the output to a file.  It will take the output currently in the display
+     * window, open the File Explorer and write the text to a file selected by the user.  If there is no text in the
+     * display window then an error dialog will be displayed.
+     * @param fileMenu
+     */
+    private void makeSaveFileMenuItem(JMenu fileMenu) {
         // Event Listener for 'Save' menu item
         fileMenu.add(new AbstractAction("Save") {
             public void actionPerformed(ActionEvent e) {
-                int retval = saveFile.showSaveDialog(null);
-                if (retval == JFileChooser.APPROVE_OPTION) {
-                    File file = saveFile.getSelectedFile();
-                    try {
-                        PrintWriter pw = new PrintWriter(file, StandardCharsets.UTF_8.toString());
-                        String[] lines = displayOutput.getText().split("\\n");
-                        for (String s : lines) {
-                            pw.println(s);
+                if(displayOutput.getText().isEmpty()) {
+                    showError("No output to save");
+                }
+                else {
+                    int retval = saveFile.showSaveDialog(null);
+                    if (retval == JFileChooser.APPROVE_OPTION) {
+                        File file = saveFile.getSelectedFile();
+                        try {
+                            PrintWriter pw = new PrintWriter(file, StandardCharsets.UTF_8.toString());
+                            String[] lines = displayOutput.getText().split("\\n");
+                            for (String s : lines) {
+                                pw.println(s);
+                            }
+                            pw.close();
+                        } catch (FileNotFoundException e1) {
+                            showError("Could not open " + file);
+                            e1.printStackTrace();
+                        } catch (UnsupportedEncodingException e2) {
+                            showError("Encoding not supported");
+                            e2.printStackTrace();
                         }
-                        pw.close();
-                    } catch (FileNotFoundException e1) {
-                        showError("Could not open " + file);
-                        e1.printStackTrace();
-                    } catch (UnsupportedEncodingException e2) {
-                        showError("Encoding not supported");
-                        e2.printStackTrace();
                     }
                 }
             }
         });
+    }
 
+    /**
+     * Resets the sliders to their default values & clears the output from the display window
+     * @param fileMenu
+     */
+    private void makeClearMenuItem(JMenu fileMenu) {
         fileMenu.add(new AbstractAction("Clear") {
             public void actionPerformed(ActionEvent e) {
                 clear();
             }
         });
+    }
 
+    /**
+     * Exits the application
+     * @param fileMenu
+     */
+    private void makeQuitMenuItem(JMenu fileMenu) {
         fileMenu.add(new AbstractAction("Quit") {
             public void actionPerformed(ActionEvent ev) {
                 System.exit(0);
             }
         });
-        return fileMenu;
     }
 
-    // Event Listener for 'Generate Text' button
-    protected void generateTextEvent() {
+    /**
+     * Gets the current position of the input parameters 'order-k' and 'max count'.  These values are passed to
+     * the controller.  Random text data will be generated and returned at which point it can be displayed in the
+     * output display window.  If no data is generated, display an error dialog.
+     */
+    private void generateTextEvent() {
         generateBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ev) {
 
@@ -186,7 +231,11 @@ public class ChainView extends JFrame {
 
                 try {
                     String generatedText = controller.generateText(inputParams);
-                    update(generatedText);
+                    if(generatedText.isEmpty())
+                        showError("No text to display - check file contents");
+                    else
+                        update(generatedText);
+                    generateBtn.setEnabled(false);  // Prevents adding more text to the buffer.
 
                 } catch (Exception e) {
                     showError("Encountered problem generating the text");
@@ -195,25 +244,22 @@ public class ChainView extends JFrame {
         });
     }
 
-    // Prints message in notifications panel
-    public void showNotification(String s) {
+    private void showNotification(String s) {
         notifications.setText(s);
     }
 
-    // Displays a dialog for any error's returned
-    public void showError(String s) {
+    private void showError(String s) {
         JOptionPane.showMessageDialog(this, s, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
-    // Appends data to the output textbox
-    public void update(String s) {
+    private void update(String s) {
         displayOutput.setLineWrap(true);
         displayOutput.setWrapStyleWord(true);
         displayOutput.append(s);
+        showNotification("New text added to output window");
     }
 
-    // Resets order-K, maxCount and output - however data is still in buffer
-    public void clear() {
+    private void clear() {
         orderK.setValue(2);
         maxCount.setValue(1000);
         displayOutput.setText("");

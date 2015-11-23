@@ -12,7 +12,7 @@ public class ChainController {
 
     private ChainModel model;
 
-    /*
+    /**
     * Class constructor
     *
     * Creates a new ChainModel object.  Until the app is closed, the buffer will keep storing/retrieving new data.
@@ -21,21 +21,34 @@ public class ChainController {
         model = new ChainModel();
     }
 
-    // Start method (run by MarkovChainApp) - creates a new View object and ensures the window is visible.
-    public void startApplication() {
-        ChainView view = new ChainView();
+    /**
+     * Creates a new View object and makes the window visible on the screen.
+     * @param title  Enables a unique title to be set for the application window
+     */
+    public void startApplication(String title) {
+        ChainView view = new ChainView(title);
         view.setVisible(true);
     }
 
-    // Retrieve the filePath from View, open file and process the input.
+    /**
+     * Retrieve the filePath user selected in View, open file, process file contents, return true/false to View.
+     * @param filePath  relative path of the file to be processed
+     * @return          true/false depending on whether the file could be processed or not
+     * @throws IOException
+     */
     public boolean processInputFile(String filePath) throws IOException {
         return model.processInput(filePath);
     }
 
-    // This is where the magic happens - get input params, build state table and generate the text
+    /**
+     * This is where the magic happens - get input params, build state table and generate the text
+     * @param inputParams   a map containing keys ['orderK', 'maxC'] and integer values for these keys
+     * @return              String containing the generated text (or empty if none)
+     * @throws IOException
+     */
     public String generateText(Map<String, Integer> inputParams) throws IOException {
-        model.allocateInputParams(inputParams);  // Retrieve order-k & max count params from View
-        model.build();                          // Build the prefix/suffixes table
-        return model.generateRandomText();                // Return the newly generated text to the View
+        model.assignInputParams(inputParams);         // Retrieve order-k & max count params from View
+        model.buildStateTable();                      // Build the prefix/suffixes table
+        return model.generateRandomText();            // Return the newly generated text to the View
     }
 }

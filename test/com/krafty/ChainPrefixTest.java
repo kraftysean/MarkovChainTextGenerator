@@ -40,17 +40,17 @@ public class ChainPrefixTest {
         List<String> expectedDouble = new ArrayList<>();
         expectedDouble.add("\n");
         expectedDouble.add("\n");
-        assertEquals(expectedDouble, cPrefNonValueDouble.getcPref());
+        assertEquals(expectedDouble, cPrefNonValueDouble.getPrefixList());
 
         List<String> expectedSingle = new ArrayList<>();
         expectedSingle.add("\n");
         expectedSingle.add("A");
-        assertEquals(expectedSingle, cPrefNonValueSingle.getcPref());
+        assertEquals(expectedSingle, cPrefNonValueSingle.getPrefixList());
 
         List<String> expectedPrefix = new ArrayList<>();
         expectedPrefix.add("A");
         expectedPrefix.add("B");
-        assertEquals(expectedPrefix, cPref.getcPref());
+        assertEquals(expectedPrefix, cPref.getPrefixList());
     }
 
     @Test

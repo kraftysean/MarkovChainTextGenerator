@@ -15,6 +15,6 @@ public class MarkovChainApp {
     public static void main(String[] args) throws IOException {
 
         ChainController controller = new ChainController();
-        controller.startApplication();
+        controller.startApplication("Text Generator - using Markov Chain algorithm");
     }
 }
