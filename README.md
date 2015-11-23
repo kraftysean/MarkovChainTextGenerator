@@ -1,11 +1,12 @@
-# Implementing the Markov Chain Algorithm
+# Text Generator - using Markov Chain Algorithm
 
 **Definition**
 *A stochastic model describing a sequence of possible events in which the probability of each event depends only on the state attained in the previous event.*
 
 ![Image of Garkov comic strip](http://goo.gl/SrcngF)
+*Random implementation of aforementioned algorithm to re-produce Garfield comic strip*
 
-#### SIMPLE WEB UI
+#### SIMPLE WEB UI - Concept only
    http://smarnane.wix.com/landing
  
 #### NOTES:

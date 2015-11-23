@@ -18,19 +18,22 @@ import static org.junit.Assert.*;
  * @author  Seán Marnane 21/11/15
  *
  */
-public class ChainTest {
+public class ChainModelTest {
 
-    private Chain chain;
-    private List<String> listData;
+    private ChainModel model;
+    private List<String> listData, expectedData;
     private String testData;
 
     @Before
     public void setUp() {
-        chain = new Chain(2);
+        model = new ChainModel();
         listData = new ArrayList<>();
-        testData = "To Test A Selection of \n\nMultiline Words To Test";
+        testData = "To Test A Selection of Multiline\n\n Words To Test";
         Collections.addAll(listData, testData.split("\\s+"));
-        listData.add(Chain.MARKER);
+        listData.add(ChainModel.MARKER);
+
+        expectedData = new ArrayList<>();
+        expectedData.add("To");
     }
 
     @Rule
@@ -38,27 +41,27 @@ public class ChainTest {
 
 
     @Test
-    public void testReadTxtInput() throws Exception {
+    public void testProcessInput() throws Exception {
         File tempFile = testFolder.newFile("test.txt");
         BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
         bw.write(testData);
         bw.close();
 
-        chain.readTxtInput(testFolder.getRoot() + "/" + tempFile.getName());
-        assertEquals(listData, chain.getWords());
+        model.processInput(testFolder.getRoot() + "/" + tempFile.getName());
+        assertEquals(listData, model.getWords());
     }
 
     @Test (expected = NoSuchFileException.class)
-    public void testReadTxtInputNoSuchFileException() throws IOException {
-        chain.readTxtInput("invalid_name");
+    public void testProcessInputNoSuchFileException() throws IOException {
+        model.processInput("invalid_name");
     }
 
     @Test (expected = IOException.class)
-    public void testReadTxtInputIOException() throws IOException {
+    public void testProcessInputIOException() throws IOException {
         File tempFile = testFolder.newFile("test.txt");
         tempFile.setReadable(false);
 
-        chain.readTxtInput(testFolder.getRoot() + "/" + tempFile.getName());
+        model.processInput(testFolder.getRoot() + "/" + tempFile.getName());
     }
 
     @Test
@@ -68,15 +71,11 @@ public class ChainTest {
         bw.write(testData);
         bw.close();
 
-        chain.readTxtInput(testFolder.getRoot() + "/" + tempFile.getName());
-        chain.build();
+        model.processInput(testFolder.getRoot() + "/" + tempFile.getName());
+        model.build();
 
-        List<String> expectedValue = new ArrayList<>();
-        expectedValue.add("A");
-        expectedValue.add("\n");
-
-        assertEquals(7, chain.getStateTable().size());
-        assertEquals(expectedValue, chain.getStateTable().get(new Prefix(listData, 0, 2)));
+        assertEquals(9, model.getStateTable().size());
+        assertEquals(expectedData, model.getStateTable().get(new ChainPrefix(listData, 0, 2, ChainModel.MARKER)));
     }
 
     @Test
@@ -86,10 +85,10 @@ public class ChainTest {
         bw.write(testData);
         bw.close();
 
-        chain.readTxtInput(testFolder.getRoot() + "/" + tempFile.getName());
-        chain.build();
+        model.processInput(testFolder.getRoot() + "/" + tempFile.getName());
+        model.build();
 
-        assertNotNull(chain.generate(100));
+        assertNotNull(model.generateRandomText());
         // Update class to allow a seed value to be specified for the Randomizer
     }
 }
