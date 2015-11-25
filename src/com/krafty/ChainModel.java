@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @author Seán Marnane 21/11/15
@@ -48,17 +49,27 @@ public class ChainModel {
      * @return  if input is processed will return true, otherwise false.
      * @throws IOException  File Not Found, File locked, Character Encoding not valid etc.
      */
-    public boolean processInput(String pathToFile) throws IOException {
-        String line;
+    public int processInput(String pathToFile) {
+        String line = null;
+        Pattern splitSpace = Pattern.compile("\\s+");
 
-        BufferedReader in = Files.newBufferedReader(Paths.get(pathToFile), StandardCharsets.UTF_8);
-        while ((line = in.readLine()) != null) {                   // Read lines until File empty or reached the end
-            if (line.isEmpty())                                    // Skip lines with no text
-                continue;
-            Collections.addAll(words, line.trim().split("\\s+"));  // Remove spaces before adding words to ArrayList
+        try (BufferedReader in = Files.newBufferedReader(Paths.get(pathToFile), StandardCharsets.UTF_8)) {
+            while ((line = in.readLine()) != null) {                   // Read lines until file is empty or reached the end
+                if (line.isEmpty())                                    // Skip lines with no text
+                    continue;
+                buildWordList(line, splitSpace);
+            }
+            words.add(MARKER);                                          // End of file marker appended to ArrayList
+            return words.size() - 1;
+        } catch (IOException e) {
+            System.err.println(e);
+            return -1;
         }
-        words.add(MARKER);                                          // End of file marker appended to ArrayList
-        return true;
+    }
+
+    private void buildWordList(String line, Pattern splitSpace) {
+        Collections.addAll(words, splitSpace.split(line, 0));       // Remove spaces before adding words to ArrayList
+        // ALTERNATIVELY: words.addAll(Arrays.asList(splitSpace.split(line, 0)));
     }
 
     /**
@@ -102,8 +113,7 @@ public class ChainModel {
         StringBuilder sb = new StringBuilder();
         randomizer = new Randomizer(SEED);
 
-        // Get initial prefix key as starting point
-        ChainPrefix key = chain.keySet().iterator().next();
+        ChainPrefix key = getChainPrefix();
         for(int i = 0; i < maxCount; i++) {
             List<String> suffixes = chain.get(key);
             String suffix = suffixes.get(randomizer.randomGenerator(suffixes.size()));
@@ -116,6 +126,16 @@ public class ChainModel {
             key.getPrefixList().add(suffix);
         }
         return sb.toString().trim();
+    }
+
+    /**
+     * Choose an initial key/prefix which will be the starting point for the random text generator.  Subsequent keys
+     * will be iterated from this
+     * @return prefix key
+     */
+    private ChainPrefix getChainPrefix() {
+        List<ChainPrefix> keys = new ArrayList<>(chain.keySet());
+        return keys.get(randomizer.randomGenerator(keys.size()));
     }
 
     /**

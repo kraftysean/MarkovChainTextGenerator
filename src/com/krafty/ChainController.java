@@ -36,7 +36,7 @@ public class ChainController {
      * @return          true/false depending on whether the file could be processed or not
      * @throws IOException
      */
-    public boolean processInputFile(String filePath) throws IOException {
+    public int processInputFile(String filePath) throws IOException {
         return model.processInput(filePath);
     }
 

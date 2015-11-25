@@ -54,7 +54,7 @@ public class ChainView extends JFrame {
         JPanel p = new JPanel(new BorderLayout());
         JPanel flow = new JPanel(new FlowLayout());
         orderK = makeCustomSlider(1, 5, 2, 1, 3, makeOrderKSliderLabel());
-        maxCount = makeCustomSlider(100, 10000, 1000, 1000, 0, makeMaxCSliderLabel());
+        maxCount = makeCustomSlider(1, 10000, 1000, 500, 0, makeMaxCSliderLabel());
         generateBtn = new JButton("Generate Text");
         generateBtn.setEnabled(false);
         p.setBorder(BorderFactory.createTitledBorder("Input:"));
@@ -105,7 +105,7 @@ public class ChainView extends JFrame {
 
     private Hashtable<Integer, JLabel> makeMaxCSliderLabel() {
         Hashtable<Integer, JLabel> table = new Hashtable<>();
-        table.put(100, new JLabel("100"));
+        table.put(1, new JLabel("1"));
         table.put(5000, new JLabel("5000"));
         table.put(10000, new JLabel("10000"));
         return table;
@@ -138,16 +138,23 @@ public class ChainView extends JFrame {
             public void actionPerformed(ActionEvent ev) {
                 int retval = openFile.showOpenDialog(null);
                 if (retval == JFileChooser.APPROVE_OPTION) {
+                    showNotification("Processing...");
                     File file = openFile.getSelectedFile();
                     try{
-                        boolean isFileValid = controller.processInputFile(file.getPath());
-                        if(isFileValid) {
+                        long start = System.nanoTime();
+                        int wordCount = controller.processInputFile(file.getPath());
+                        long time = System.nanoTime() - start;
+                        System.out.printf("Time: %f seconds%n", time / 1e9);
+                        if(wordCount > 0) {
                             generateBtn.setEnabled(true);
-                            showNotification("File successfully read in to buffer");
+                            showNotification(wordCount + " words successfully parsed in " + String.format("%.2g%n", (time / 1e9)) + "seconds");
                         }
-                        else
+                        else {
+                            showNotification("");
                             showError("Error reading " + file.getName());
+                        }
                     } catch (Exception ex) {
+                        showNotification("");
                         showError("Error reading " + file.getName());
                     }
                 }
@@ -179,6 +186,7 @@ public class ChainView extends JFrame {
                                 pw.println(s);
                             }
                             pw.close();
+                            showNotification("Successfully saved output to " + file.getName());
                         } catch (FileNotFoundException e1) {
                             showError("Could not open " + file);
                             e1.printStackTrace();
@@ -229,15 +237,23 @@ public class ChainView extends JFrame {
                 inputParams.put("orderK", orderK.getValue());
                 inputParams.put("maxC", maxCount.getValue());
 
+                showNotification("Processing...");
                 try {
+                    long start = System.nanoTime();
                     String generatedText = controller.generateText(inputParams);
-                    if(generatedText.isEmpty())
+                    long time = System.nanoTime() - start;
+                    System.out.printf("Time: %f seconds%n", time / 1e9);
+                    if (generatedText.isEmpty()) {
+                        showNotification("");
                         showError("No text to display - check file contents");
-                    else
+                    } else {
                         update(generatedText);
+                        showNotification(maxCount.getValue() + " random words generated in "
+                                + String.format("%.2g%n", (time / 1e9)) + "seconds");
+                    }
                     generateBtn.setEnabled(false);  // Prevents adding more text to the buffer.
-
                 } catch (Exception e) {
+                    showNotification("");
                     showError("Encountered problem generating the text");
                 }
             }
@@ -254,9 +270,8 @@ public class ChainView extends JFrame {
 
     private void update(String s) {
         displayOutput.setLineWrap(true);
-        displayOutput.setWrapStyleWord(true);
+        displayOutput.setWrapStyleWord(false);
         displayOutput.append(s);
-        showNotification("New text added to output window");
     }
 
     private void clear() {
